@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/includes/holidays.php';
 
 requireLogin();
 $csrf = generateCsrfToken();
@@ -18,17 +19,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $weeklyHours   = (float)str_replace(',', '.', $_POST['weekly_hours'] ?? '40');
         $vacationDays  = (int)($_POST['vacation_days_per_year'] ?? 30);
         $breakMinutes  = (int)($_POST['break_minutes'] ?? 30);
+        $bundesland    = $_POST['bundesland'] ?? 'NW';
+
+        if (!array_key_exists($bundesland, BUNDESLAENDER)) $bundesland = 'NW';
 
         if ($weeklyHours > 0 && $weeklyHours <= 168 && $vacationDays >= 0 && $breakMinutes >= 0) {
             $row = $db->query('SELECT id FROM settings LIMIT 1')->fetch();
             if ($row) {
                 $db->prepare(
-                    'UPDATE settings SET weekly_hours = ?, vacation_days_per_year = ?, break_minutes = ? WHERE id = ?'
-                )->execute([$weeklyHours, $vacationDays, $breakMinutes, $row['id']]);
+                    'UPDATE settings SET weekly_hours = ?, vacation_days_per_year = ?, break_minutes = ?, bundesland = ? WHERE id = ?'
+                )->execute([$weeklyHours, $vacationDays, $breakMinutes, $bundesland, $row['id']]);
             } else {
                 $db->prepare(
-                    'INSERT INTO settings (weekly_hours, vacation_days_per_year, break_minutes) VALUES (?, ?, ?)'
-                )->execute([$weeklyHours, $vacationDays, $breakMinutes]);
+                    'INSERT INTO settings (weekly_hours, vacation_days_per_year, break_minutes, bundesland) VALUES (?, ?, ?, ?)'
+                )->execute([$weeklyHours, $vacationDays, $breakMinutes, $bundesland]);
             }
             $success = 'Einstellungen gespeichert.';
         } else {
@@ -87,6 +91,15 @@ $settings = getSettings();
             <label>Unbezahlte Pause pro Tag (Minuten)
                 <input type="number" name="break_minutes" value="<?= (int)($settings['break_minutes'] ?? 30) ?>"
                        min="0" max="240" required>
+            </label>
+            <label>Bundesland (für automatische Feiertage)
+                <select name="bundesland">
+                    <?php foreach (BUNDESLAENDER as $code => $name): ?>
+                        <option value="<?= $code ?>" <?= ($settings['bundesland'] ?? 'NW') === $code ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($name) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
             </label>
             <button type="submit" class="btn btn-primary">Speichern</button>
         </form>

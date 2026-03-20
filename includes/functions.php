@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/holidays.php';
 require_once __DIR__ . '/../config.php';
 
 date_default_timezone_set(TIMEZONE);
@@ -105,10 +106,27 @@ function cumulativeOvertimeSeconds(string $fromDate, string $toDate): int {
 // ── Absence helpers ──────────────────────────────────────────────────
 
 function getAbsenceForDate(string $date): ?array {
+    // 1. Check manually entered absences first
     $stmt = getDB()->prepare('SELECT * FROM absences WHERE date = ? LIMIT 1');
     $stmt->execute([$date]);
     $row = $stmt->fetch();
-    return $row ?: null;
+    if ($row) return $row;
+
+    // 2. Fall back to auto-calculated public holiday for the configured Bundesland
+    $settings = getSettings();
+    $bl = $settings['bundesland'] ?? 'NW';
+    $name = getHolidayName($date, $bl);
+    if ($name) {
+        return [
+            'id'       => null,
+            'date'     => $date,
+            'type'     => 'holiday',
+            'half_day' => 0,
+            'note'     => $name,
+            'auto'     => true, // not stored in DB
+        ];
+    }
+    return null;
 }
 
 function vacationDaysTakenThisYear(): float {

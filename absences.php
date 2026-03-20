@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/functions.php';
+require_once __DIR__ . '/includes/holidays.php';
 
 requireLogin();
 $csrf = generateCsrfToken();
@@ -44,6 +45,8 @@ $absenceList = $stmt->fetchAll();
 $taken = vacationDaysTakenThisYear();
 $remaining = remainingVacationDays();
 $settings = getSettings();
+$bl = $settings['bundesland'] ?? 'NW';
+$holidays = getHolidays($year, $bl);
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -129,6 +132,40 @@ $settings = getSettings();
             </tbody>
         </table>
         <?php endif; ?>
+    </section>
+
+    <!-- Feiertage -->
+    <section class="card">
+        <h3>Gesetzliche Feiertage <?= $year ?> — <?= htmlspecialchars(BUNDESLAENDER[$bl] ?? $bl) ?></h3>
+        <p class="hint" style="margin-bottom:1rem">
+            Werden automatisch bei der Überstunden-Berechnung berücksichtigt.
+            Bundesland ändern unter <a href="/settings.php">Einstellungen</a>.
+        </p>
+        <table class="entries-table">
+            <thead>
+                <tr><th>Datum</th><th>Wochentag</th><th>Feiertag</th><th>Manuell eingetragen</th></tr>
+            </thead>
+            <tbody>
+            <?php foreach ($holidays as $date => $name): ?>
+                <?php
+                $manual = getAbsenceForDate($date);
+                $isManual = $manual && empty($manual['auto']);
+                ?>
+                <tr>
+                    <td><?= date('d.m.Y', strtotime($date)) ?></td>
+                    <td><?= date('l', strtotime($date)) ?></td>
+                    <td><strong><?= htmlspecialchars($name) ?></strong></td>
+                    <td>
+                        <?php if ($isManual): ?>
+                            <span style="color:var(--success)">✓ Ja</span>
+                        <?php else: ?>
+                            <span style="color:var(--text-subtle)">Automatisch</span>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
     </section>
 </main>
 <script src="/assets/app.js"></script>

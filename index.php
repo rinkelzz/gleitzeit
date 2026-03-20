@@ -154,7 +154,15 @@ $remainingVacation = remainingVacationDays();
                     <td><?= $d['target'] > 0 ? number_format($d['target'] / 3600, 2) . ' h' : '—' ?></td>
                     <?php $saldo = $d['worked'] - $d['target']; ?>
                     <td class="<?= $saldo >= 0 ? 'positive' : 'negative' ?>"><?= formatSeconds($saldo) ?></td>
-                    <td><?= $d['absence'] ? absenceLabel($d['absence']['type']) . ($d['absence']['half_day'] ? ' (½)' : '') : '' ?></td>
+                    <td>
+                        <?php if ($d['absence']): ?>
+                            <?php if ($d['absence']['type'] === 'holiday'): ?>
+                                <span style="color:var(--primary)">🎉 <?= htmlspecialchars($d['absence']['note'] ?? 'Feiertag') ?></span>
+                            <?php else: ?>
+                                <?= absenceLabel($d['absence']['type']) . ($d['absence']['half_day'] ? ' (½)' : '') ?>
+                            <?php endif; ?>
+                        <?php endif; ?>
+                    </td>
                 </tr>
             <?php endforeach; ?>
             </tbody>
