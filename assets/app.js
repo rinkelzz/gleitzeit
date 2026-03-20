@@ -35,4 +35,17 @@ function startLiveTimer() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', startLiveTimer);
+// ── File drop label ───────────────────────────────────────
+function initFileDrop() {
+    const input = document.getElementById('csvfile');
+    const label = document.getElementById('fileName');
+    if (!input || !label) return;
+    input.addEventListener('change', () => {
+        label.textContent = input.files[0]?.name ?? 'Maximal 2 MB';
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    startLiveTimer();
+    initFileDrop();
+});
