@@ -5,7 +5,8 @@ Persönliche Arbeitszeiterfassung mit Web-Dashboard und iPhone Shortcuts Integra
 - **Check-in/out** per iPhone Kurzbefehl (automatisch oder manuell)
 - **Dashboard** mit Tages- und Wochenübersicht, Überstunden-Saldo
 - **Abwesenheitsverwaltung** für Urlaub, Krank, Feiertage
-- **Monatsansicht** mit editierbaren Einträgen
+- **Monatsansicht** mit editierbaren und manuell hinzufügbaren Einträgen
+- **Konfigurierbare Pausenzeit** wird täglich automatisch abgezogen
 
 ---
 
@@ -70,6 +71,20 @@ In `.htaccess` den HTTPS-Redirect einkommentieren:
 RewriteCond %{HTTPS} off
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 ```
+
+---
+
+## Einstellungen
+
+Unter `/settings.php` lassen sich folgende Werte anpassen:
+
+| Einstellung | Beschreibung | Standard |
+|-------------|--------------|---------|
+| Wochenstunden (Soll) | Vertraglich vereinbarte Stunden pro Woche | 40 h |
+| Urlaubstage pro Jahr | Gesamter Jahresanspruch | 30 Tage |
+| Unbezahlte Pause pro Tag | Wird täglich von der Arbeitszeit abgezogen | 30 min |
+
+Bei Halbtagsabwesenheiten wird die Pause automatisch halbiert.
 
 ---
 
@@ -169,6 +184,19 @@ Mit der Automatisierungs-Funktion in Shortcuts kannst du Check-in/out automatisc
 - Alle Formulare sind CSRF-geschützt
 - Rate Limiting: max. 10 API-Calls pro Minute pro IP
 - HTTPS ist Pflicht im Produktivbetrieb
+
+---
+
+## Manuelle Zeiteinträge
+
+Vergessene oder nachträgliche Einträge lassen sich unter **Monat** (`/month.php`) direkt hinzufügen:
+
+1. Gewünschten Monat öffnen
+2. Im Formular "Eintrag manuell hinzufügen" Check-in und Check-out eintragen
+3. Optional eine Notiz ergänzen
+4. **Hinzufügen** klicken
+
+Bestehende Einträge können über **Bearbeiten** korrigiert oder über **Löschen** entfernt werden.
 
 ---
 

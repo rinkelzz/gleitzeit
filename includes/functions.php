@@ -40,7 +40,7 @@ function checkout(?string $note = null): array {
 
 function getSettings(): array {
     $row = getDB()->query('SELECT * FROM settings LIMIT 1')->fetch();
-    return $row ?: ['weekly_hours' => 40.00, 'vacation_days_per_year' => 30];
+    return $row ?: ['weekly_hours' => 40.00, 'vacation_days_per_year' => 30, 'break_minutes' => 30];
 }
 
 // ── Hours calculation ────────────────────────────────────────────────
@@ -77,10 +77,16 @@ function overtimeSecondsOnDate(string $date): int {
     $absence = getAbsenceForDate($date);
     if ($absence && !$absence['half_day']) return 0; // full day off → no overtime delta
 
-    $target = dailyTargetHours() * 3600;
-    if ($absence && $absence['half_day']) $target /= 2;
+    $settings = getSettings();
+    $breakSecs = (int)$settings['break_minutes'] * 60;
 
-    $worked = workedSecondsOnDate($date);
+    $target = dailyTargetHours() * 3600;
+    if ($absence && $absence['half_day']) {
+        $target /= 2;
+        $breakSecs = (int)($breakSecs / 2);
+    }
+
+    $worked = max(0, workedSecondsOnDate($date) - $breakSecs);
     return $worked - (int)$target;
 }
 
