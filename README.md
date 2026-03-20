@@ -3,9 +3,12 @@
 Persönliche Arbeitszeiterfassung mit Web-Dashboard und iPhone Shortcuts Integration.
 
 - **Check-in/out** per iPhone Kurzbefehl (automatisch oder manuell)
-- **Dashboard** mit Tages- und Wochenübersicht, Überstunden-Saldo
-- **Abwesenheitsverwaltung** für Urlaub, Krank, Feiertage
+- **Gleitzeit-Konto & Überstunden-Konto** — getrennte Salden, pro Tag wählbar
+- **Automatische Feiertage** für alle 16 Bundesländer
+- **Abwesenheitsverwaltung** für Urlaub, Krank, Gleittage und Feiertage
 - **Monatsansicht** mit editierbaren und manuell hinzufügbaren Einträgen
+- **Export** als CSV (Excel-kompatibel) und PDF-Druckansicht
+- **Import** aus CSV mit Vorschau
 - **Konfigurierbare Pausenzeit** wird täglich automatisch abgezogen
 
 ---
@@ -60,8 +63,7 @@ GRANT ALL PRIVILEGES ON gleitzeit.* TO 'gleitzeit_user'@'localhost';
 
 ### 4. Tabellen einrichten
 
-`https://deinserver.de/setup.php` im Browser aufrufen.
-**Danach `setup.php` löschen!**
+`https://deinserver.de/setup.php` im Browser aufrufen — danach **`setup.php` löschen!**
 
 ### 5. HTTPS aktivieren
 
@@ -71,20 +73,6 @@ In `.htaccess` den HTTPS-Redirect einkommentieren:
 RewriteCond %{HTTPS} off
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 ```
-
----
-
-## Einstellungen
-
-Unter `/settings.php` lassen sich folgende Werte anpassen:
-
-| Einstellung | Beschreibung | Standard |
-|-------------|--------------|---------|
-| Wochenstunden (Soll) | Vertraglich vereinbarte Stunden pro Woche | 40 h |
-| Urlaubstage pro Jahr | Gesamter Jahresanspruch | 30 Tage |
-| Unbezahlte Pause pro Tag | Wird täglich von der Arbeitszeit abgezogen | 30 min |
-
-Bei Halbtagsabwesenheiten wird die Pause automatisch halbiert.
 
 ---
 
@@ -101,6 +89,87 @@ curl http://localhost:8081/setup.php
 ```
 
 Container stoppen: `docker compose down`
+
+---
+
+## Einstellungen
+
+Unter `/settings.php` lassen sich folgende Werte anpassen:
+
+| Einstellung | Beschreibung | Standard |
+|-------------|--------------|---------|
+| Wochenstunden (Soll) | Vertraglich vereinbarte Stunden pro Woche | 40 h |
+| Urlaubstage pro Jahr | Gesamter Jahresanspruch | 30 Tage |
+| Unbezahlte Pause pro Tag | Wird täglich von der Arbeitszeit abgezogen | 30 min |
+| Bundesland | Für automatische Feiertags-Berechnung | NW |
+
+Bei Halbtagsabwesenheiten wird die Pause automatisch halbiert.
+
+---
+
+## Gleitzeit- und Überstunden-Konto
+
+Das System unterscheidet zwei getrennte Zeitkonten:
+
+| Konto | Befüllung | Anzeige im Dashboard |
+|-------|-----------|----------------------|
+| **Gleitzeit-Konto** | Alle normalen Arbeitstage automatisch | Blau |
+| **Überstunden-Konto** | Nur Tage, die explizit als Überstunden markiert werden | Gelb |
+
+### Überstunden markieren
+
+In der **Monatsansicht** (`/month.php`) hat jeder Tag einen **☆ Ü**-Button. Ein Klick markiert den Tag als Überstundentag — der Tagessaldo fließt dann ins Überstunden-Konto statt ins Gleitzeit-Konto. Nochmaliger Klick hebt die Markierung auf.
+
+### Gleitzeit entnehmen
+
+Einen freien Tag vom Gleitzeit-Konto nehmen:
+
+1. **Abwesenheiten** → Typ **"Gleittag (Gleitzeit entnehmen)"** eintragen
+2. Das Tagessoll wird automatisch vom Gleitzeit-Konto abgezogen
+
+Früher gehen ohne expliziten Eintrag funktioniert ebenfalls automatisch — wer weniger als das Tagessoll arbeitet, hat einen negativen Delta, der das Gleitzeit-Konto reduziert.
+
+---
+
+## Automatische Feiertage
+
+Feiertage werden automatisch für das konfigurierte Bundesland berechnet — kein manuelles Eintragen nötig. Alle 16 Bundesländer werden unterstützt, inkl. aller Sonderfeiertage (Fronleichnam, Reformationstag, Buß- und Bettag etc.).
+
+Feiertage werden in der Überstunden-Berechnung automatisch als freie Tage behandelt. Die vollständige Liste ist unter **Abwesenheiten** einsehbar.
+
+---
+
+## Manuelle Zeiteinträge
+
+Vergessene oder nachträgliche Einträge lassen sich unter **Monat** (`/month.php`) direkt hinzufügen:
+
+1. Gewünschten Monat öffnen
+2. Im Formular "Eintrag manuell hinzufügen" Check-in und Check-out eintragen
+3. Optional eine Notiz ergänzen → **Hinzufügen**
+
+Bestehende Einträge können über **Bearbeiten** korrigiert oder **Löschen** entfernt werden.
+
+---
+
+## Export & Import
+
+### CSV-Export
+
+Unter **Export** (`/export.php`) den gewünschten Monat wählen und **CSV herunterladen**. Die Datei ist UTF-8 mit BOM — öffnet direkt korrekt in Excel und LibreOffice.
+
+**Format:**
+```
+datum;checkin;checkout;dauer_h;notiz
+2026-03-19;2026-03-19 08:30;2026-03-19 17:00;8.5;Meeting
+```
+
+### PDF-Export
+
+Unter **Export** → **PDF-Ansicht öffnen** wird eine druckoptimierte Monatsübersicht geöffnet. Im Browser `Strg+P` → "Als PDF speichern".
+
+### CSV-Import
+
+Unter **Import** (`/import.php`) eine CSV-Datei hochladen. Vor dem eigentlichen Import wird eine Vorschau der erkannten Einträge angezeigt — erst nach Bestätigung werden die Daten übernommen. Vorhandene Einträge werden nicht überschrieben.
 
 ---
 
@@ -160,11 +229,7 @@ Gleicher Aufbau, nur URL: `.../api/checkout.php`
 | Aktion | **"Wörterbuch"** → Schlüssel `message` abrufen |
 | Aktion | **"Ergebnis anzeigen"** |
 
----
-
 ### Automatisierung (Geo-basiert)
-
-Mit der Automatisierungs-Funktion in Shortcuts kannst du Check-in/out automatisch auslösen:
 
 1. Shortcuts-App → Tab **"Automatisierung"** → **+**
 2. **"Wenn ich einen Ort verlasse/ankomme"** wählen
@@ -187,16 +252,40 @@ Mit der Automatisierungs-Funktion in Shortcuts kannst du Check-in/out automatisc
 
 ---
 
-## Manuelle Zeiteinträge
+## Datenbankschema
 
-Vergessene oder nachträgliche Einträge lassen sich unter **Monat** (`/month.php`) direkt hinzufügen:
+```sql
+CREATE TABLE settings (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    weekly_hours DECIMAL(4,2) DEFAULT 40.00,
+    vacation_days_per_year INT DEFAULT 30,
+    break_minutes INT DEFAULT 30,
+    bundesland VARCHAR(2) DEFAULT 'NW',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
 
-1. Gewünschten Monat öffnen
-2. Im Formular "Eintrag manuell hinzufügen" Check-in und Check-out eintragen
-3. Optional eine Notiz ergänzen
-4. **Hinzufügen** klicken
+CREATE TABLE time_entries (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    checkin_time DATETIME NOT NULL,
+    checkout_time DATETIME NULL,
+    note VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-Bestehende Einträge können über **Bearbeiten** korrigiert oder über **Löschen** entfernt werden.
+CREATE TABLE absences (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    date DATE NOT NULL,
+    type ENUM('vacation','sick','holiday','gleitzeit','other') NOT NULL,
+    half_day TINYINT(1) DEFAULT 0,
+    note VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE day_flags (
+    date DATE PRIMARY KEY,
+    overtime TINYINT(1) DEFAULT 0
+);
+```
 
 ---
 
@@ -204,18 +293,22 @@ Bestehende Einträge können über **Bearbeiten** korrigiert oder über **Lösch
 
 ```
 gleitzeit/
-├── config.php          # Credentials (gitignored)
-├── config.example.php  # Template
-├── setup.php           # DB-Setup (einmalig, danach löschen)
-├── index.php           # Dashboard
-├── month.php           # Monatsansicht
-├── absences.php        # Abwesenheitsverwaltung
-├── settings.php        # Einstellungen & Passwort
+├── config.php            # Credentials (gitignored)
+├── config.example.php    # Template
+├── setup.php             # DB-Setup (einmalig, danach löschen)
+├── index.php             # Dashboard (Gleitzeit- & Überstunden-Konto)
+├── month.php             # Monatsansicht mit Überstunden-Toggle
+├── absences.php          # Abwesenheiten & Feiertagsübersicht
+├── export.php            # CSV- und PDF-Export
+├── import.php            # CSV-Import mit Vorschau
+├── settings.php          # Einstellungen & Passwort
 ├── login.php / logout.php
 ├── includes/
-│   ├── db.php          # PDO-Singleton
-│   ├── auth.php        # Session, CSRF, API-Key, Rate Limiting
-│   └── functions.php   # Überstunden-Berechnung, Hilfsfunktionen
+│   ├── db.php            # PDO-Singleton
+│   ├── auth.php          # Session, CSRF, API-Key, Rate Limiting
+│   ├── functions.php     # Zeitberechnung, Gleitzeit/Überstunden-Konten
+│   ├── holidays.php      # Feiertage nach Bundesland (alle 16)
+│   └── nav.php           # Gemeinsame Navigation
 ├── api/
 │   ├── checkin.php
 │   ├── checkout.php
