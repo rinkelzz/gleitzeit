@@ -63,16 +63,7 @@ $settings = getSettings();
     <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
-<header class="site-header">
-    <span class="logo">⏱ Gleitzeit</span>
-    <nav>
-        <a href="/index.php">Dashboard</a>
-        <a href="/month.php">Monat</a>
-        <a href="/absences.php">Abwesenheiten</a>
-        <a href="/settings.php" class="active">Einstellungen</a>
-        <a href="/logout.php">Logout</a>
-    </nav>
-</header>
+<?php $activePage = 'settings'; require __DIR__ . '/includes/nav.php'; ?>
 
 <main class="container">
     <h2>Einstellungen</h2>

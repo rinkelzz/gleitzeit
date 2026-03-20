@@ -80,18 +80,13 @@ $remainingVacation = remainingVacationDays();
     <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body>
-<header class="site-header">
-    <span class="logo">⏱ Gleitzeit</span>
-    <nav>
-        <a href="/index.php" class="active">Dashboard</a>
-        <a href="/month.php">Monat</a>
-        <a href="/absences.php">Abwesenheiten</a>
-        <a href="/settings.php">Einstellungen</a>
-        <a href="/logout.php">Logout</a>
-    </nav>
-</header>
+<?php $activePage = 'dashboard'; require __DIR__ . '/includes/nav.php'; ?>
 
 <main class="container">
+    <div class="page-header">
+        <h1>Dashboard</h1>
+        <p class="page-subtitle"><?= date('l, d. F Y') ?></p>
+    </div>
 
     <!-- Check-in / Check-out card -->
     <section class="card checkin-card">
