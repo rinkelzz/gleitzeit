@@ -17,17 +17,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'update_settings') {
         $weeklyHours   = (float)str_replace(',', '.', $_POST['weekly_hours'] ?? '40');
         $vacationDays  = (int)($_POST['vacation_days_per_year'] ?? 30);
+        $breakMinutes  = (int)($_POST['break_minutes'] ?? 30);
 
-        if ($weeklyHours > 0 && $weeklyHours <= 168 && $vacationDays >= 0) {
+        if ($weeklyHours > 0 && $weeklyHours <= 168 && $vacationDays >= 0 && $breakMinutes >= 0) {
             $row = $db->query('SELECT id FROM settings LIMIT 1')->fetch();
             if ($row) {
                 $db->prepare(
-                    'UPDATE settings SET weekly_hours = ?, vacation_days_per_year = ? WHERE id = ?'
-                )->execute([$weeklyHours, $vacationDays, $row['id']]);
+                    'UPDATE settings SET weekly_hours = ?, vacation_days_per_year = ?, break_minutes = ? WHERE id = ?'
+                )->execute([$weeklyHours, $vacationDays, $breakMinutes, $row['id']]);
             } else {
                 $db->prepare(
-                    'INSERT INTO settings (weekly_hours, vacation_days_per_year) VALUES (?, ?)'
-                )->execute([$weeklyHours, $vacationDays]);
+                    'INSERT INTO settings (weekly_hours, vacation_days_per_year, break_minutes) VALUES (?, ?, ?)'
+                )->execute([$weeklyHours, $vacationDays, $breakMinutes]);
             }
             $success = 'Einstellungen gespeichert.';
         } else {
@@ -91,6 +92,10 @@ $settings = getSettings();
             <label>Urlaubstage pro Jahr
                 <input type="number" name="vacation_days_per_year" value="<?= (int)$settings['vacation_days_per_year'] ?>"
                        min="0" max="365" required>
+            </label>
+            <label>Unbezahlte Pause pro Tag (Minuten)
+                <input type="number" name="break_minutes" value="<?= (int)($settings['break_minutes'] ?? 30) ?>"
+                       min="0" max="240" required>
             </label>
             <button type="submit" class="btn btn-primary">Speichern</button>
         </form>

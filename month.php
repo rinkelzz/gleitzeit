@@ -18,7 +18,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id     = (int)($_POST['id'] ?? 0);
     $db     = getDB();
 
-    if ($action === 'delete' && $id > 0) {
+    if ($action === 'add') {
+        $checkin  = $_POST['checkin_time']  ?? '';
+        $checkout = $_POST['checkout_time'] ?? '';
+        $note     = substr(trim($_POST['note'] ?? ''), 0, 255);
+
+        $checkinDt  = DateTime::createFromFormat('Y-m-d\TH:i', $checkin);
+        $checkoutDt = $checkout ? DateTime::createFromFormat('Y-m-d\TH:i', $checkout) : null;
+
+        if ($checkinDt) {
+            $db->prepare(
+                'INSERT INTO time_entries (checkin_time, checkout_time, note) VALUES (?, ?, ?)'
+            )->execute([
+                $checkinDt->format('Y-m-d H:i:s'),
+                $checkoutDt ? $checkoutDt->format('Y-m-d H:i:s') : null,
+                $note ?: null,
+            ]);
+        }
+    } elseif ($action === 'delete' && $id > 0) {
         $db->prepare('DELETE FROM time_entries WHERE id = ?')->execute([$id]);
     } elseif ($action === 'edit' && $id > 0) {
         $checkin  = $_POST['checkin_time']  ?? '';
@@ -95,6 +112,28 @@ $editId = (int)($_GET['edit'] ?? 0);
         <a href="/month.php?year=<?= $ny ?>&month=<?= $nm ?>" class="btn btn-secondary">&rarr;</a>
     </div>
 
+    <!-- Add entry form -->
+    <section class="card">
+        <h3>Eintrag manuell hinzufügen</h3>
+        <form method="post" action="/month.php?year=<?= $year ?>&month=<?= $month ?>" class="inline-edit-form">
+            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
+            <input type="hidden" name="action" value="add">
+            <label>Check-in
+                <input type="datetime-local" name="checkin_time"
+                       value="<?= date('Y-m') ?>-01T09:00" required>
+            </label>
+            <label>Check-out
+                <input type="datetime-local" name="checkout_time"
+                       value="<?= date('Y-m') ?>-01T17:00">
+            </label>
+            <label>Notiz
+                <input type="text" name="note" maxlength="255" placeholder="Optional">
+            </label>
+            <button type="submit" class="btn btn-primary">Hinzufügen</button>
+        </form>
+    </section>
+
+    <!-- Entries list -->
     <section class="card">
         <?php if (empty($entries)): ?>
             <p class="empty">Keine Einträge in diesem Monat.</p>
