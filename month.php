@@ -35,6 +35,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $note ?: null,
             ]);
         }
+    } elseif ($action === 'toggle_overtime') {
+        $date = $_POST['date'] ?? '';
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            setDayOvertime($date, !isDayOvertime($date));
+        }
     } elseif ($action === 'delete' && $id > 0) {
         $db->prepare('DELETE FROM time_entries WHERE id = ?')->execute([$id]);
     } elseif ($action === 'edit' && $id > 0) {
@@ -84,6 +89,12 @@ function nextMonth(int $y, int $m): array {
 [$ny, $nm] = nextMonth($year, $month);
 
 $editId = (int)($_GET['edit'] ?? 0);
+
+// Group entries by date
+$byDate = [];
+foreach ($entries as $e) {
+    $byDate[date('Y-m-d', strtotime($e['checkin_time']))][] = $e;
+}
 ?>
 <!DOCTYPE html>
 <html lang="de">
@@ -124,7 +135,7 @@ $editId = (int)($_GET['edit'] ?? 0);
         </form>
     </section>
 
-    <!-- Entries list -->
+    <!-- Entries list grouped by day -->
     <section class="card">
         <?php if (empty($entries)): ?>
             <p class="empty">Keine Einträge in diesem Monat.</p>
@@ -132,18 +143,30 @@ $editId = (int)($_GET['edit'] ?? 0);
         <table class="entries-table">
             <thead>
                 <tr>
+                    <th>Tag</th>
                     <th>Check-in</th>
                     <th>Check-out</th>
                     <th>Dauer</th>
+                    <th>Saldo</th>
+                    <th>Konto</th>
                     <th>Notiz</th>
                     <th>Aktionen</th>
                 </tr>
             </thead>
             <tbody>
-            <?php foreach ($entries as $e): ?>
+            <?php
+            $prevDate = null;
+            foreach ($entries as $e):
+                $entryDate = date('Y-m-d', strtotime($e['checkin_time']));
+                $isNewDay  = $entryDate !== $prevDate;
+                $prevDate  = $entryDate;
+                $dayIsOT   = isDayOvertime($entryDate);
+                $dayEntries = $byDate[$entryDate] ?? [];
+                $totalInDay = count($dayEntries);
+            ?>
                 <?php if ($editId === (int)$e['id']): ?>
                 <tr class="edit-row">
-                    <td colspan="5">
+                    <td colspan="8">
                         <form method="post" action="/month.php?year=<?= $year ?>&month=<?= $month ?>" class="inline-edit-form">
                             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
                             <input type="hidden" name="action" value="edit">
@@ -160,24 +183,55 @@ $editId = (int)($_GET['edit'] ?? 0);
                                 <input type="text" name="note" value="<?= htmlspecialchars($e['note'] ?? '') ?>" maxlength="255">
                             </label>
                             <button type="submit" class="btn btn-primary">Speichern</button>
-                            <a href="/month.php?year=<?= $year ?>&month=<?= $month ?>" class="btn btn-secondary">Abbrechen</a>
+                            <a href="/month.php?year=<?= $year ?>&month=<?= $month ?>" class="btn btn-ghost">Abbrechen</a>
                         </form>
                     </td>
                 </tr>
                 <?php else: ?>
-                <tr>
-                    <td><?= htmlspecialchars(date('d.m. H:i', strtotime($e['checkin_time']))) ?></td>
-                    <td><?= $e['checkout_time'] ? htmlspecialchars(date('d.m. H:i', strtotime($e['checkout_time']))) : '<em>offen</em>' ?></td>
+                <tr class="<?= $entryDate === date('Y-m-d') ? 'today-row' : '' ?>">
+                    <?php if ($isNewDay): ?>
+                    <td rowspan="<?= $totalInDay ?>" class="day-cell">
+                        <div class="day-label"><?= date('D d.m.', strtotime($entryDate)) ?></div>
+                        <?php $delta = dailyDeltaSeconds($entryDate); ?>
+                        <?php if ($delta !== null): ?>
+                            <div class="day-saldo <?= $delta >= 0 ? 'positive' : 'negative' ?>"><?= formatSeconds($delta) ?></div>
+                        <?php endif; ?>
+                        <!-- Überstunden-Toggle -->
+                        <form method="post" action="/month.php?year=<?= $year ?>&month=<?= $month ?>" class="inline-form" style="margin-top:.4rem">
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">
+                            <input type="hidden" name="action" value="toggle_overtime">
+                            <input type="hidden" name="date" value="<?= $entryDate ?>">
+                            <button type="submit" class="btn btn-sm <?= $dayIsOT ? 'btn-overtime-active' : 'btn-overtime' ?>"
+                                    title="<?= $dayIsOT ? 'Überstunden-Markierung entfernen' : 'Als Überstunden markieren' ?>">
+                                <?= $dayIsOT ? '★ Ü' : '☆ Ü' ?>
+                            </button>
+                        </form>
+                    </td>
+                    <?php endif; ?>
+                    <td><?= date('H:i', strtotime($e['checkin_time'])) ?></td>
+                    <td><?= $e['checkout_time'] ? date('H:i', strtotime($e['checkout_time'])) : '<em>offen</em>' ?></td>
                     <td>
-                        <?php if ($e['checkout_time']): ?>
-                            <?= formatDuration(strtotime($e['checkin_time']), strtotime($e['checkout_time'])) ?>
+                        <?= $e['checkout_time']
+                            ? formatDuration(strtotime($e['checkin_time']), strtotime($e['checkout_time']))
+                            : '—' ?>
+                    </td>
+                    <?php if ($isNewDay): ?>
+                    <td rowspan="<?= $totalInDay ?>">
+                        <?php if ($delta !== null): ?>
+                            <span class="<?= $delta >= 0 ? 'positive' : 'negative' ?>"><?= formatSeconds($delta) ?></span>
+                        <?php else: ?>—<?php endif; ?>
+                    </td>
+                    <td rowspan="<?= $totalInDay ?>">
+                        <?php if ($dayIsOT): ?>
+                            <span class="badge badge-overtime">Überstunden</span>
                         <?php else: ?>
-                            —
+                            <span class="badge badge-gleitzeit">Gleitzeit</span>
                         <?php endif; ?>
                     </td>
+                    <?php endif; ?>
                     <td><?= htmlspecialchars($e['note'] ?? '') ?></td>
                     <td class="actions">
-                        <a href="/month.php?year=<?= $year ?>&month=<?= $month ?>&edit=<?= $e['id'] ?>" class="btn btn-secondary btn-sm">Bearbeiten</a>
+                        <a href="/month.php?year=<?= $year ?>&month=<?= $month ?>&edit=<?= $e['id'] ?>" class="btn btn-ghost btn-sm">Bearbeiten</a>
                         <form method="post" action="/month.php?year=<?= $year ?>&month=<?= $month ?>" class="inline-form"
                               onsubmit="return confirm('Eintrag wirklich löschen?')">
                             <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrf) ?>">

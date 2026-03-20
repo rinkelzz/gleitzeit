@@ -527,6 +527,59 @@ code {
 /* ── Import form ─────────────────────────────────────────── */
 .import-form { display: flex; flex-direction: column; gap: .75rem; }
 
+/* ── Badges ──────────────────────────────────────────────── */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: .15rem .5rem;
+    border-radius: 99px;
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .03em;
+    white-space: nowrap;
+}
+.badge-overtime  { background: #fef3c7; color: #92400e; }
+.badge-gleitzeit { background: var(--primary-light); color: var(--primary-dark); }
+
+/* ── Summary card variants ───────────────────────────────── */
+.summary-card--gleitzeit::before {
+    background: linear-gradient(90deg, var(--primary), #818cf8);
+}
+.summary-card--overtime::before {
+    background: linear-gradient(90deg, #d97706, #fbbf24);
+}
+
+.stat-hint {
+    font-size: .72rem;
+    color: var(--text-subtle);
+    margin-top: .1rem;
+}
+
+/* ── Day cell in month table ─────────────────────────────── */
+.day-cell {
+    vertical-align: top;
+    padding-top: .75rem !important;
+    min-width: 110px;
+}
+.day-label { font-weight: 700; font-size: .875rem; }
+.day-saldo { font-size: .8rem; margin-top: .15rem; }
+
+/* ── Overtime toggle button ──────────────────────────────── */
+.btn-overtime {
+    background: transparent;
+    border: 1px dashed var(--border);
+    color: var(--text-subtle);
+}
+.btn-overtime:hover { border-color: #d97706; color: #d97706; background: #fffbeb; }
+
+.btn-overtime-active {
+    background: #fef3c7;
+    border: 1px solid #fcd34d;
+    color: #92400e;
+    font-weight: 700;
+}
+.btn-overtime-active:hover { background: #fde68a; }
+
 /* ── Misc ────────────────────────────────────────────────── */
 .divider {
     border: none;

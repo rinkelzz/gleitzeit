@@ -55,18 +55,21 @@ foreach ($weekDays as $day) {
     $weekWorked  += $worked;
     $weekTarget  += $target;
     $weekDayData[] = [
-        'date'    => $day,
-        'label'   => date('D, d.m.', strtotime($day)),
-        'worked'  => $worked,
-        'target'  => $target,
-        'absence' => $absence,
-        'isToday' => $day === $today,
+        'date'       => $day,
+        'label'      => date('D, d.m.', strtotime($day)),
+        'worked'     => $worked,
+        'target'     => $target,
+        'absence'    => $absence,
+        'isToday'    => $day === $today,
+        'isOvertime' => isDayOvertime($day),
     ];
 }
 
-// Month overtime
-$monthStart     = date('Y-m-01');
-$monthOvertimeSecs = cumulativeOvertimeSeconds($monthStart, $today);
+// Year-to-date balances
+$yearStart = date('Y-01-01');
+$balances  = getAccountBalances($yearStart, $today);
+$gleitzeitSecs = $balances['gleitzeit'];
+$overtimeSecs  = $balances['overtime'];
 
 // Vacation
 $remainingVacation = remainingVacationDays();
@@ -149,10 +152,15 @@ $remainingVacation = remainingVacationDays();
             <tbody>
             <?php foreach ($weekDayData as $d): ?>
                 <tr class="<?= $d['isToday'] ? 'today-row' : '' ?>">
-                    <td><?= $d['label'] ?></td>
+                    <td>
+                        <?= $d['label'] ?>
+                        <?php if ($d['isOvertime']): ?>
+                            <span class="badge badge-overtime">Ü</span>
+                        <?php endif; ?>
+                    </td>
                     <td><?= formatDuration(0, $d['worked']) ?></td>
                     <td><?= $d['target'] > 0 ? number_format($d['target'] / 3600, 2) . ' h' : '—' ?></td>
-                    <?php $saldo = $d['worked'] - $d['target']; ?>
+                    <?php $saldo = overtimeSecondsOnDate($d['date']); ?>
                     <td class="<?= $saldo >= 0 ? 'positive' : 'negative' ?>"><?= formatSeconds($saldo) ?></td>
                     <td>
                         <?php if ($d['absence']): ?>
@@ -161,6 +169,8 @@ $remainingVacation = remainingVacationDays();
                             <?php else: ?>
                                 <?= absenceLabel($d['absence']['type']) . ($d['absence']['half_day'] ? ' (½)' : '') ?>
                             <?php endif; ?>
+                        <?php elseif ($d['isOvertime']): ?>
+                            <span class="badge badge-overtime">Überstunden</span>
                         <?php endif; ?>
                     </td>
                 </tr>
@@ -181,15 +191,24 @@ $remainingVacation = remainingVacationDays();
 
     <!-- Summary cards -->
     <div class="summary-cards">
-        <div class="card summary-card">
-            <span class="stat-label">Überstunden (Monat)</span>
-            <span class="stat-value big <?= $monthOvertimeSecs >= 0 ? 'positive' : 'negative' ?>">
-                <?= formatSeconds($monthOvertimeSecs) ?>
+        <div class="card summary-card summary-card--gleitzeit">
+            <span class="stat-label">Gleitzeit-Konto (<?= date('Y') ?>)</span>
+            <span class="stat-value big <?= $gleitzeitSecs >= 0 ? 'positive' : 'negative' ?>">
+                <?= formatSeconds($gleitzeitSecs) ?>
             </span>
+            <span class="stat-hint">Normale Tage · automatisch</span>
+        </div>
+        <div class="card summary-card summary-card--overtime">
+            <span class="stat-label">Überstunden-Konto (<?= date('Y') ?>)</span>
+            <span class="stat-value big <?= $overtimeSecs >= 0 ? 'positive' : 'negative' ?>">
+                <?= formatSeconds($overtimeSecs) ?>
+            </span>
+            <span class="stat-hint">Nur markierte Tage (Ü)</span>
         </div>
         <div class="card summary-card">
             <span class="stat-label">Resturlaub</span>
             <span class="stat-value big"><?= number_format($remainingVacation, 1) ?> Tage</span>
+            <span class="stat-hint">&nbsp;</span>
         </div>
     </div>
 
