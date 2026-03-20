@@ -41,7 +41,27 @@ function checkout(?string $note = null): array {
 
 function getSettings(): array {
     $row = getDB()->query('SELECT * FROM settings LIMIT 1')->fetch();
-    return $row ?: ['weekly_hours' => 40.00, 'vacation_days_per_year' => 30, 'break_minutes' => 30];
+    return $row ?: ['weekly_hours' => 40.00, 'vacation_days_per_year' => 30, 'break_minutes' => 30, 'bundesland' => 'NW'];
+}
+
+// ── Day flags (Überstunden-Markierung) ──────────────────────────────
+
+function isDayOvertime(string $date): bool {
+    $stmt = getDB()->prepare('SELECT overtime FROM day_flags WHERE date = ?');
+    $stmt->execute([$date]);
+    $row = $stmt->fetch();
+    return $row ? (bool)$row['overtime'] : false;
+}
+
+function setDayOvertime(string $date, bool $overtime): void {
+    if ($overtime) {
+        getDB()->prepare(
+            'INSERT INTO day_flags (date, overtime) VALUES (?, 1)
+             ON DUPLICATE KEY UPDATE overtime = 1'
+        )->execute([$date]);
+    } else {
+        getDB()->prepare('DELETE FROM day_flags WHERE date = ?')->execute([$date]);
+    }
 }
 
 // ── Hours calculation ────────────────────────────────────────────────
@@ -67,40 +87,86 @@ function workedSecondsOnDate(string $date): int {
 }
 
 /**
- * Overtime seconds for a given date.
- * Returns 0 for weekends and absence days (vacation/holiday/sick).
- * For half-day absences, target is reduced by half.
+ * Net delta seconds for a given date (worked - break - target).
+ *
+ * Returns null if the day is a weekend or a full-day absence that
+ * does NOT affect any time account (vacation / sick / holiday).
+ *
+ * 'gleitzeit' absences DO produce a delta (target still applies —
+ * you "spend" flex time).
  */
-function overtimeSecondsOnDate(string $date): int {
-    $dow = (int)date('N', strtotime($date)); // 1=Mon … 7=Sun
-    if ($dow >= 6) return 0;
+function dailyDeltaSeconds(string $date): ?int {
+    $dow = (int)date('N', strtotime($date));
+    if ($dow >= 6) return null;
 
     $absence = getAbsenceForDate($date);
-    if ($absence && !$absence['half_day']) return 0; // full day off → no overtime delta
 
-    $settings = getSettings();
-    $breakSecs = (int)$settings['break_minutes'] * 60;
-
-    $target = dailyTargetHours() * 3600;
-    if ($absence && $absence['half_day']) {
-        $target /= 2;
-        $breakSecs = (int)($breakSecs / 2);
+    // Full-day off types that zero out the target and produce no delta
+    $zeroTargetTypes = ['vacation', 'sick', 'holiday'];
+    if ($absence && !$absence['half_day'] && in_array($absence['type'], $zeroTargetTypes, true)) {
+        return null;
     }
 
-    $worked = max(0, workedSecondsOnDate($date) - $breakSecs);
+    $settings  = getSettings();
+    $breakSecs = (int)$settings['break_minutes'] * 60;
+    $target    = dailyTargetHours() * 3600;
+
+    // Gleitzeittag or other full-day: target still applies, worked = 0
+    if ($absence && !$absence['half_day']) {
+        // gleitzeit / other full-day: 0 worked, full target → negative delta
+        $worked = 0;
+        $breakSecs = 0;
+    } elseif ($absence && $absence['half_day']) {
+        $target    /= 2;
+        $breakSecs  = (int)($breakSecs / 2);
+        $worked     = max(0, workedSecondsOnDate($date) - $breakSecs);
+    } else {
+        $worked = max(0, workedSecondsOnDate($date) - $breakSecs);
+    }
+
     return $worked - (int)$target;
 }
 
-/** Cumulative overtime in seconds from $fromDate to $toDate (inclusive). */
-function cumulativeOvertimeSeconds(string $fromDate, string $toDate): int {
-    $total = 0;
-    $current = strtotime($fromDate);
-    $end = strtotime($toDate);
+/**
+ * Legacy wrapper — kept for compatibility (used in week table display).
+ */
+function overtimeSecondsOnDate(string $date): int {
+    return dailyDeltaSeconds($date) ?? 0;
+}
+
+// ── Gleitzeit & Überstunden Konten ──────────────────────────────────
+
+/**
+ * Returns [gleitzeit_seconds, overtime_seconds] for a date range.
+ * Days flagged as overtime contribute to overtime_seconds,
+ * all other working days contribute to gleitzeit_seconds.
+ */
+function getAccountBalances(string $fromDate, string $toDate): array {
+    $gleitzeit = 0;
+    $overtime  = 0;
+    $current   = strtotime($fromDate);
+    $end       = strtotime($toDate);
+
     while ($current <= $end) {
-        $total += overtimeSecondsOnDate(date('Y-m-d', $current));
+        $date  = date('Y-m-d', $current);
+        $delta = dailyDeltaSeconds($date);
+        if ($delta !== null) {
+            if (isDayOvertime($date)) {
+                $overtime += $delta;
+            } else {
+                $gleitzeit += $delta;
+            }
+        }
         $current = strtotime('+1 day', $current);
     }
-    return $total;
+
+    return ['gleitzeit' => $gleitzeit, 'overtime' => $overtime];
+}
+
+/** Cumulative overtime in seconds from $fromDate to $toDate (kept for export.php). */
+function cumulativeOvertimeSeconds(string $fromDate, string $toDate): int {
+    $balances = getAccountBalances($fromDate, $toDate);
+    return $balances['gleitzeit'] + $balances['overtime'];
 }
 
 // ── Absence helpers ──────────────────────────────────────────────────
@@ -123,7 +189,7 @@ function getAbsenceForDate(string $date): ?array {
             'type'     => 'holiday',
             'half_day' => 0,
             'note'     => $name,
-            'auto'     => true, // not stored in DB
+            'auto'     => true,
         ];
     }
     return null;
@@ -167,10 +233,11 @@ function formatSeconds(int $secs): string {
 
 function absenceLabel(string $type): string {
     return match($type) {
-        'vacation' => 'Urlaub',
-        'sick'     => 'Krank',
-        'holiday'  => 'Feiertag',
-        default    => 'Sonstiges',
+        'vacation'  => 'Urlaub',
+        'sick'      => 'Krank',
+        'holiday'   => 'Feiertag',
+        'gleitzeit' => 'Gleittag',
+        default     => 'Sonstiges',
     };
 }
 

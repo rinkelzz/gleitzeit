@@ -88,6 +88,7 @@ $holidays = getHolidays($year, $bl);
                 <label>Typ
                     <select name="type" required>
                         <option value="vacation">Urlaub</option>
+                        <option value="gleitzeit">Gleittag (Gleitzeit entnehmen)</option>
                         <option value="sick">Krank</option>
                         <option value="holiday">Feiertag</option>
                         <option value="other">Sonstiges</option>
