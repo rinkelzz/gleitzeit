@@ -96,6 +96,8 @@ Container stoppen: `docker compose down`
 
 Unter `/settings.php` lassen sich folgende Werte anpassen:
 
+### Arbeitszeit
+
 | Einstellung | Beschreibung | Standard |
 |-------------|--------------|---------|
 | Wochenstunden (Soll) | Vertraglich vereinbarte Stunden pro Woche | 40 h |
@@ -104,6 +106,22 @@ Unter `/settings.php` lassen sich folgende Werte anpassen:
 | Bundesland | Für automatische Feiertags-Berechnung | NW |
 
 Bei Halbtagsabwesenheiten wird die Pause automatisch halbiert.
+
+### Erfassungszeitraum & Überträge
+
+| Einstellung | Beschreibung |
+|-------------|-------------|
+| **Erfassungsbeginn** | Ab welchem Datum Salden berechnet werden (z. B. Eintrittsdatum). Leer = 1. Januar des aktuellen Jahres |
+| **Übertrag Gleitzeit** | Gleitzeit-Saldo aus dem Vorjahr in Minuten (positiv oder negativ) |
+| **Übertrag Überstunden** | Überstunden-Saldo aus dem Vorjahr in Minuten |
+| **Übertrag Resturlaub** | Nicht genommene Urlaubstage aus dem Vorjahr (auch halbe Tage möglich) |
+
+**Beispiel:** Wer am 15.06. anfängt und 3:30 h Gleitzeit sowie 5 Urlaubstage aus dem Vorjob mitbringt:
+- Erfassungsbeginn: `2026-06-15`
+- Übertrag Gleitzeit: `210` (= 3 h × 60 + 30 min)
+- Übertrag Resturlaub: `5.0`
+
+Das Dashboard zeigt die Konten dann ab dem Erfassungsbeginn inklusive der Überträge.
 
 ---
 
@@ -261,6 +279,10 @@ CREATE TABLE settings (
     vacation_days_per_year INT DEFAULT 30,
     break_minutes INT DEFAULT 30,
     bundesland VARCHAR(2) DEFAULT 'NW',
+    tracking_start_date DATE DEFAULT NULL,
+    carryover_gleitzeit_minutes INT DEFAULT 0,
+    carryover_overtime_minutes INT DEFAULT 0,
+    carryover_vacation DECIMAL(4,1) DEFAULT 0,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 

@@ -16,23 +16,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $db     = getDB();
 
     if ($action === 'update_settings') {
-        $weeklyHours   = (float)str_replace(',', '.', $_POST['weekly_hours'] ?? '40');
-        $vacationDays  = (int)($_POST['vacation_days_per_year'] ?? 30);
-        $breakMinutes  = (int)($_POST['break_minutes'] ?? 30);
-        $bundesland    = $_POST['bundesland'] ?? 'NW';
+        $weeklyHours        = (float)str_replace(',', '.', $_POST['weekly_hours'] ?? '40');
+        $vacationDays       = (int)($_POST['vacation_days_per_year'] ?? 30);
+        $breakMinutes       = (int)($_POST['break_minutes'] ?? 30);
+        $bundesland         = $_POST['bundesland'] ?? 'NW';
+        $trackingStartRaw   = $_POST['tracking_start_date'] ?? '';
+        $carryoverGleitzeit = (int)($_POST['carryover_gleitzeit_minutes'] ?? 0);
+        $carryoverOvertime  = (int)($_POST['carryover_overtime_minutes']  ?? 0);
+        $carryoverVacation  = (float)str_replace(',', '.', $_POST['carryover_vacation'] ?? '0');
 
         if (!array_key_exists($bundesland, BUNDESLAENDER)) $bundesland = 'NW';
+
+        // Validate tracking start date
+        $trackingStart = null;
+        if ($trackingStartRaw) {
+            $dt = DateTime::createFromFormat('Y-m-d', $trackingStartRaw);
+            if ($dt) $trackingStart = $dt->format('Y-m-d');
+        }
 
         if ($weeklyHours > 0 && $weeklyHours <= 168 && $vacationDays >= 0 && $breakMinutes >= 0) {
             $row = $db->query('SELECT id FROM settings LIMIT 1')->fetch();
             if ($row) {
                 $db->prepare(
-                    'UPDATE settings SET weekly_hours = ?, vacation_days_per_year = ?, break_minutes = ?, bundesland = ? WHERE id = ?'
-                )->execute([$weeklyHours, $vacationDays, $breakMinutes, $bundesland, $row['id']]);
+                    'UPDATE settings SET weekly_hours = ?, vacation_days_per_year = ?, break_minutes = ?,
+                     bundesland = ?, tracking_start_date = ?,
+                     carryover_gleitzeit_minutes = ?, carryover_overtime_minutes = ?,
+                     carryover_vacation = ? WHERE id = ?'
+                )->execute([
+                    $weeklyHours, $vacationDays, $breakMinutes,
+                    $bundesland, $trackingStart,
+                    $carryoverGleitzeit, $carryoverOvertime, $carryoverVacation,
+                    $row['id'],
+                ]);
             } else {
                 $db->prepare(
-                    'INSERT INTO settings (weekly_hours, vacation_days_per_year, break_minutes, bundesland) VALUES (?, ?, ?, ?)'
-                )->execute([$weeklyHours, $vacationDays, $breakMinutes, $bundesland]);
+                    'INSERT INTO settings (weekly_hours, vacation_days_per_year, break_minutes,
+                     bundesland, tracking_start_date,
+                     carryover_gleitzeit_minutes, carryover_overtime_minutes, carryover_vacation)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+                )->execute([
+                    $weeklyHours, $vacationDays, $breakMinutes,
+                    $bundesland, $trackingStart,
+                    $carryoverGleitzeit, $carryoverOvertime, $carryoverVacation,
+                ]);
             }
             $success = 'Einstellungen gespeichert.';
         } else {
@@ -100,6 +126,31 @@ $settings = getSettings();
                         </option>
                     <?php endforeach; ?>
                 </select>
+            </label>
+            <hr class="divider">
+            <h4 style="color:var(--text-muted);font-size:.85rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Erfassungszeitraum & Überträge</h4>
+            <label>Erfassungsbeginn
+                <input type="date" name="tracking_start_date"
+                       value="<?= htmlspecialchars($settings['tracking_start_date'] ?? '') ?>">
+                <span class="hint" style="margin-top:.2rem">Ab diesem Tag werden Salden berechnet. Leer = 1. Januar des aktuellen Jahres.</span>
+            </label>
+            <label>Übertrag Gleitzeit-Konto (Minuten)
+                <input type="number" name="carryover_gleitzeit_minutes"
+                       value="<?= (int)($settings['carryover_gleitzeit_minutes'] ?? 0) ?>"
+                       step="1" placeholder="z.B. 150 oder -60">
+                <span class="hint" style="margin-top:.2rem">Positiv = Plus-Stunden, negativ = Minus-Stunden aus dem Vorjahr. z.B. +2:30 h = 150</span>
+            </label>
+            <label>Übertrag Überstunden-Konto (Minuten)
+                <input type="number" name="carryover_overtime_minutes"
+                       value="<?= (int)($settings['carryover_overtime_minutes'] ?? 0) ?>"
+                       step="1" placeholder="z.B. 480 für 8 h">
+                <span class="hint" style="margin-top:.2rem">Überstunden-Übertrag aus dem Vorjahr in Minuten.</span>
+            </label>
+            <label>Übertrag Resturlaub (Tage)
+                <input type="number" name="carryover_vacation"
+                       value="<?= number_format((float)($settings['carryover_vacation'] ?? 0), 1) ?>"
+                       step="0.5" placeholder="z.B. 3 oder 2.5">
+                <span class="hint" style="margin-top:.2rem">Urlaubstage aus dem Vorjahr, die noch genommen werden können.</span>
             </label>
             <button type="submit" class="btn btn-primary">Speichern</button>
         </form>

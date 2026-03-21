@@ -41,7 +41,22 @@ function checkout(?string $note = null): array {
 
 function getSettings(): array {
     $row = getDB()->query('SELECT * FROM settings LIMIT 1')->fetch();
-    return $row ?: ['weekly_hours' => 40.00, 'vacation_days_per_year' => 30, 'break_minutes' => 30, 'bundesland' => 'NW'];
+    return $row ?: [
+        'weekly_hours'                => 40.00,
+        'vacation_days_per_year'      => 30,
+        'break_minutes'               => 30,
+        'bundesland'                  => 'NW',
+        'tracking_start_date'         => null,
+        'carryover_gleitzeit_minutes' => 0,
+        'carryover_overtime_minutes'  => 0,
+        'carryover_vacation'          => 0.0,
+    ];
+}
+
+/** Returns the date from which balances are calculated (tracking start or Jan 1). */
+function getTrackingStartDate(): string {
+    $settings = getSettings();
+    return $settings['tracking_start_date'] ?? date('Y-01-01');
 }
 
 // ── Day flags (Überstunden-Markierung) ──────────────────────────────
@@ -163,6 +178,26 @@ function getAccountBalances(string $fromDate, string $toDate): array {
     return ['gleitzeit' => $gleitzeit, 'overtime' => $overtime];
 }
 
+/**
+ * Total balances including carry-overs from previous year.
+ * Uses tracking_start_date from settings.
+ */
+function getTotalBalances(): array {
+    $settings  = getSettings();
+    $startDate = getTrackingStartDate();
+    $today     = date('Y-m-d');
+
+    $balances = getAccountBalances($startDate, $today);
+
+    $carryoverGleitzeit = (int)($settings['carryover_gleitzeit_minutes'] ?? 0) * 60;
+    $carryoverOvertime  = (int)($settings['carryover_overtime_minutes']  ?? 0) * 60;
+
+    return [
+        'gleitzeit' => $balances['gleitzeit'] + $carryoverGleitzeit,
+        'overtime'  => $balances['overtime']  + $carryoverOvertime,
+    ];
+}
+
 /** Cumulative overtime in seconds from $fromDate to $toDate (kept for export.php). */
 function cumulativeOvertimeSeconds(string $fromDate, string $toDate): int {
     $balances = getAccountBalances($fromDate, $toDate);
@@ -206,8 +241,9 @@ function vacationDaysTakenThisYear(): float {
 }
 
 function remainingVacationDays(): float {
-    $settings = getSettings();
-    return $settings['vacation_days_per_year'] - vacationDaysTakenThisYear();
+    $settings  = getSettings();
+    $carryover = (float)($settings['carryover_vacation'] ?? 0);
+    return $settings['vacation_days_per_year'] + $carryover - vacationDaysTakenThisYear();
 }
 
 // ── Formatting ───────────────────────────────────────────────────────
