@@ -645,3 +645,53 @@ code {
 @media (max-width: 400px) {
     .summary-cards { grid-template-columns: 1fr; }
 }
+
+/* ── Jahreskalender ─────────────────────────────────────── */
+.year-nav { display:flex; align-items:center; justify-content:center; gap:1.5rem; margin-bottom:1.5rem; }
+.year-nav h2 { font-size:1.4rem; font-weight:700; }
+
+.year-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.25rem; }
+@media (max-width:700px) { .year-grid { grid-template-columns:1fr; } }
+
+.month-block { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1rem; box-shadow:var(--shadow-sm); }
+.month-block h3 { font-size:.95rem; font-weight:700; margin-bottom:.5rem; }
+
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+.cal-header { font-size:.65rem; font-weight:600; text-align:center; color:var(--text-subtle); padding:2px 0; }
+
+.day-tile {
+    aspect-ratio:1; border-radius:4px; font-size:.65rem; font-weight:600;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    cursor:default; user-select:none; line-height:1.1;
+    border:1px solid transparent; position:relative;
+}
+.day-tile[data-selectable="1"] { cursor:pointer; }
+.day-tile[data-selectable="1"]:hover { border-color:var(--primary); }
+
+.day-tile.tile-weekend   { background:#f3f4f6; color:var(--text-subtle); }
+.day-tile.tile-empty     { background:var(--surface-2); color:var(--text); }
+.day-tile.tile-vacation  { background:#dcfce7; color:#15803d; }
+.day-tile.tile-gleitzeit { background:#dbeafe; color:#1d4ed8; }
+.day-tile.tile-overtime  { background:#ede9fe; color:#7c3aed; }
+.day-tile.tile-sick      { background:#fee2e2; color:#b91c1c; }
+.day-tile.tile-holiday   { background:#ffedd5; color:#c2410c; }
+.day-tile.tile-halfday   { opacity:.65; }
+.day-tile.tile-filler    { background:transparent; border:none; cursor:default; }
+.day-tile.selected       { outline:2px solid var(--primary); outline-offset:1px; }
+
+.tile-label { font-size:.55rem; font-weight:700; letter-spacing:.02em; line-height:1; }
+
+/* Auswahl-Panel */
+.year-panel-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.3); z-index:500; align-items:center; justify-content:center; }
+.year-panel-overlay.active { display:flex; }
+.year-panel { background:var(--surface); border-radius:var(--radius); padding:1.5rem; box-shadow:var(--shadow-md); min-width:280px; display:flex; flex-direction:column; gap:1rem; }
+.year-panel h3 { font-size:1rem; font-weight:700; }
+.year-panel-types { display:flex; gap:.5rem; flex-wrap:wrap; }
+.year-panel-types button { flex:1; padding:.5rem; border:2px solid var(--border); border-radius:var(--radius-sm); background:var(--surface-2); font-weight:700; font-size:.85rem; cursor:pointer; }
+.year-panel-types button.active-type { border-color:var(--primary); background:var(--primary-light); }
+.year-panel-actions { display:flex; gap:.5rem; justify-content:flex-end; }
+
+/* Legende */
+.year-legend { display:flex; flex-wrap:wrap; gap:.75rem; margin-top:1.5rem; font-size:.8rem; }
+.legend-item { display:flex; align-items:center; gap:.4rem; }
+.legend-dot { width:14px; height:14px; border-radius:3px; flex-shrink:0; }
