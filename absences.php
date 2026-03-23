@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $halfDay = isset($_POST['half_day']) ? 1 : 0;
         $note    = substr(trim($_POST['note'] ?? ''), 0, 255);
 
-        $validTypes = ['vacation', 'sick', 'holiday', 'other'];
+        $validTypes = ['vacation', 'sick', 'holiday', 'gleitzeit', 'overtime_withdrawal', 'other'];
         if ($date && in_array($type, $validTypes, true)) {
             $stmt = $db->prepare(
                 'INSERT INTO absences (date, type, half_day, note) VALUES (?, ?, ?, ?)
