@@ -55,3 +55,22 @@ try {
     http_response_code(500);
     echo '<p style="color:red">Fehler: ' . htmlspecialchars($e->getMessage()) . '</p>';
 }
+
+$migrations = [
+    "ALTER TABLE absences MODIFY type ENUM('vacation','sick','holiday','gleitzeit','overtime_withdrawal','other') NOT NULL",
+    "ALTER TABLE absences ADD UNIQUE KEY uq_absences_date (date)",
+];
+
+foreach ($migrations as $i => $migration) {
+    try {
+        getDB()->exec($migration);
+        echo '<p style="color:green;font-family:monospace">&#10003; Migration ' . ($i+1) . ' OK.</p>';
+    } catch (PDOException $e) {
+        echo '<p style="color:orange;font-family:monospace">&#9888; Migration ' . ($i+1) . ' uebersprungen: '
+             . htmlspecialchars($e->getMessage()) . '</p>';
+        if ($i === 1) {
+            echo '<p style="font-family:monospace">Tipp: Duplikate pruefen:<br>'
+                 . '<code>SELECT date, COUNT(*) FROM absences GROUP BY date HAVING COUNT(*) > 1;</code></p>';
+        }
+    }
+}
