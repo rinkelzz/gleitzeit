@@ -153,7 +153,7 @@ function overtimeSecondsOnDate(string $date): int {
 
 /**
  * Returns [gleitzeit_seconds, overtime_seconds] for a date range.
- * Days flagged as overtime contribute to overtime_seconds,
+ * Days flagged as overtime or with overtime_withdrawal absence type contribute to overtime_seconds,
  * all other working days contribute to gleitzeit_seconds.
  */
 function getAccountBalances(string $fromDate, string $toDate): array {
@@ -166,7 +166,8 @@ function getAccountBalances(string $fromDate, string $toDate): array {
         $date  = date('Y-m-d', $current);
         $delta = dailyDeltaSeconds($date);
         if ($delta !== null) {
-            if (isDayOvertime($date)) {
+            $absence = getAbsenceForDate($date);
+            if (isDayOvertime($date) || ($absence && $absence['type'] === 'overtime_withdrawal')) {
                 $overtime += $delta;
             } else {
                 $gleitzeit += $delta;
@@ -269,11 +270,12 @@ function formatSeconds(int $secs): string {
 
 function absenceLabel(string $type): string {
     return match($type) {
-        'vacation'  => 'Urlaub',
-        'sick'      => 'Krank',
-        'holiday'   => 'Feiertag',
-        'gleitzeit' => 'Gleittag',
-        default     => 'Sonstiges',
+        'vacation'             => 'Urlaub',
+        'sick'                 => 'Krank',
+        'holiday'              => 'Feiertag',
+        'gleitzeit'            => 'Gleittag',
+        'overtime_withdrawal'  => 'Mehrarbeit-Entnahme',
+        default                => 'Sonstiges',
     };
 }
 
