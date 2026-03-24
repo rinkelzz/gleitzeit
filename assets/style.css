@@ -673,6 +673,7 @@ code {
 .day-tile.tile-vacation  { background:#dcfce7; color:#15803d; }
 .day-tile.tile-gleitzeit { background:#dbeafe; color:#1d4ed8; }
 .day-tile.tile-overtime  { background:#ede9fe; color:#7c3aed; }
+.day-tile.tile-bildungsurlaub { background:#fef9c3; color:#a16207; }
 .day-tile.tile-sick      { background:#fee2e2; color:#b91c1c; }
 .day-tile.tile-holiday   { background:#ffedd5; color:#c2410c; }
 .day-tile.tile-halfday   { opacity:.65; }

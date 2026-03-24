@@ -20,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $halfDay = isset($_POST['half_day']) ? 1 : 0;
         $note    = substr(trim($_POST['note'] ?? ''), 0, 255);
 
-        $validTypes = ['vacation', 'sick', 'holiday', 'gleitzeit', 'overtime_withdrawal', 'other'];
+        $validTypes = ['vacation', 'sick', 'holiday', 'gleitzeit', 'overtime_withdrawal', 'bildungsurlaub', 'other'];
         if ($date && in_array($type, $validTypes, true)) {
             $stmt = $db->prepare(
                 'INSERT INTO absences (date, type, half_day, note) VALUES (?, ?, ?, ?)
@@ -89,6 +89,8 @@ $holidays = getHolidays($year, $bl);
                     <select name="type" required>
                         <option value="vacation">Urlaub</option>
                         <option value="gleitzeit">Gleittag (Gleitzeit entnehmen)</option>
+                        <option value="overtime_withdrawal">Entnahme Mehrarbeit</option>
+                        <option value="bildungsurlaub">Bildungsurlaub</option>
                         <option value="sick">Krank</option>
                         <option value="holiday">Feiertag</option>
                         <option value="other">Sonstiges</option>
