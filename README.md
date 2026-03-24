@@ -105,6 +105,7 @@ Unter `/settings.php` lassen sich folgende Werte anpassen:
 | Urlaubstage pro Jahr | Gesamter Jahresanspruch | 30 Tage |
 | Unbezahlte Pause pro Tag | Wird täglich von der Arbeitszeit abgezogen | 30 min |
 | Bundesland | Für automatische Feiertags-Berechnung | NW |
+| Betriebsfreie Tage | Kommagetrennte Daten im Format MM-TT (z. B. `12-24, 12-31`) — gelten jedes Jahr automatisch als bezahlte Freizeit | — |
 
 Bei Halbtagsabwesenheiten wird die Pause automatisch halbiert.
 
