@@ -125,6 +125,15 @@ function getHolidays(int $year, string $bundesland): array {
         $add($nov23->modify("-{$daysBack} days")->format('Y-m-d'), 'Buß- und Bettag');
     }
 
+    // ── Betriebsfreie Tage ──────────────────────────────────────────────
+    $settings = getSettings();
+    $raw = $settings['company_free_days'] ?? '';
+    foreach (array_filter(array_map('trim', explode(',', $raw))) as $mmdd) {
+        if (preg_match('/^\d{2}-\d{2}$/', $mmdd)) {
+            $days[sprintf('%04d-%s', $y, $mmdd)] = 'Betriebsfrei';
+        }
+    }
+
     ksort($days);
     return $days;
 }
