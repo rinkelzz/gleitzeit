@@ -11,6 +11,7 @@ $activePage = $activePage ?? '';
         <a href="/index.php"      <?= $activePage === 'dashboard' ? 'class="active"' : '' ?>>Dashboard</a>
         <a href="/month.php"      <?= $activePage === 'month'     ? 'class="active"' : '' ?>>Monat</a>
         <a href="/absences.php"   <?= $activePage === 'absences'  ? 'class="active"' : '' ?>>Abwesenheiten</a>
+        <a href="/year.php"       <?= $activePage === 'year'      ? 'class="active"' : '' ?>>Jahr</a>
         <a href="/export.php"     <?= $activePage === 'export'    ? 'class="active"' : '' ?>>Export</a>
         <a href="/import.php"     <?= $activePage === 'import'    ? 'class="active"' : '' ?>>Import</a>
         <a href="/settings.php"   <?= $activePage === 'settings'  ? 'class="active"' : '' ?>>Einstellungen</a>
