@@ -97,6 +97,8 @@ function renderTile(string $date, array $absenceMap, array $holidays, array $typ
         $selectable = '0';
     }
 
+    if ($isHoliday) $selectable = '0'; // Holidays always non-selectable
+
     $label = $tileLabel !== ''
         ? '<span class="tile-label">' . htmlspecialchars($tileLabel) . '</span>'
         : '';
