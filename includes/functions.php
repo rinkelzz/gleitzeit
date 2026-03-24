@@ -50,6 +50,7 @@ function getSettings(): array {
         'carryover_gleitzeit_minutes' => 0,
         'carryover_overtime_minutes'  => 0,
         'carryover_vacation'          => 0.0,
+        'company_free_days'           => '',
     ];
 }
 

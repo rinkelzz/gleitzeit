@@ -24,6 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $carryoverGleitzeit = (int)($_POST['carryover_gleitzeit_minutes'] ?? 0);
         $carryoverOvertime  = (int)($_POST['carryover_overtime_minutes']  ?? 0);
         $carryoverVacation  = (float)str_replace(',', '.', $_POST['carryover_vacation'] ?? '0');
+        $companyFreeDays    = trim($_POST['company_free_days'] ?? '');
 
         if (!array_key_exists($bundesland, BUNDESLAENDER)) $bundesland = 'NW';
 
@@ -41,23 +42,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'UPDATE settings SET weekly_hours = ?, vacation_days_per_year = ?, break_minutes = ?,
                      bundesland = ?, tracking_start_date = ?,
                      carryover_gleitzeit_minutes = ?, carryover_overtime_minutes = ?,
-                     carryover_vacation = ? WHERE id = ?'
+                     carryover_vacation = ?, company_free_days = ? WHERE id = ?'
                 )->execute([
                     $weeklyHours, $vacationDays, $breakMinutes,
                     $bundesland, $trackingStart,
                     $carryoverGleitzeit, $carryoverOvertime, $carryoverVacation,
+                    $companyFreeDays,
                     $row['id'],
                 ]);
             } else {
                 $db->prepare(
                     'INSERT INTO settings (weekly_hours, vacation_days_per_year, break_minutes,
                      bundesland, tracking_start_date,
-                     carryover_gleitzeit_minutes, carryover_overtime_minutes, carryover_vacation)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+                     carryover_gleitzeit_minutes, carryover_overtime_minutes, carryover_vacation,
+                     company_free_days)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
                 )->execute([
                     $weeklyHours, $vacationDays, $breakMinutes,
                     $bundesland, $trackingStart,
                     $carryoverGleitzeit, $carryoverOvertime, $carryoverVacation,
+                    $companyFreeDays,
                 ]);
             }
             $success = 'Einstellungen gespeichert.';
@@ -151,6 +155,12 @@ $settings = getSettings();
                        value="<?= number_format((float)($settings['carryover_vacation'] ?? 0), 1) ?>"
                        step="0.5" placeholder="z.B. 3 oder 2.5">
                 <span class="hint" style="margin-top:.2rem">Urlaubstage aus dem Vorjahr, die noch genommen werden können.</span>
+            </label>
+            <label>Betriebsfreie Tage
+                <input type="text" name="company_free_days"
+                       value="<?= htmlspecialchars($settings['company_free_days'] ?? '') ?>"
+                       placeholder="z. B. 12-24, 12-31">
+                <span class="hint">Kommagetrennte Daten im Format MM-TT — gelten jedes Jahr automatisch.</span>
             </label>
             <button type="submit" class="btn btn-primary">Speichern</button>
         </form>

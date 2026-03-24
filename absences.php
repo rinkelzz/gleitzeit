@@ -139,9 +139,9 @@ $holidays = getHolidays($year, $bl);
 
     <!-- Feiertage -->
     <section class="card">
-        <h3>Gesetzliche Feiertage <?= $year ?> — <?= htmlspecialchars(BUNDESLAENDER[$bl] ?? $bl) ?></h3>
+        <h3>Feiertage &amp; betriebsfreie Tage <?= $year ?> — <?= htmlspecialchars(BUNDESLAENDER[$bl] ?? $bl) ?></h3>
         <p class="hint" style="margin-bottom:1rem">
-            Werden automatisch bei der Überstunden-Berechnung berücksichtigt.
+            Werden automatisch bei der Soll-Berechnung berücksichtigt.
             Bundesland ändern unter <a href="/settings.php">Einstellungen</a>.
         </p>
         <table class="entries-table">
@@ -151,6 +151,8 @@ $holidays = getHolidays($year, $bl);
             <tbody>
             <?php foreach ($holidays as $date => $name): ?>
                 <?php
+                [$y, $m, $d] = explode('-', $date);
+                if (!checkdate((int)$m, (int)$d, (int)$y)) continue;
                 $manual = getAbsenceForDate($date);
                 $isManual = $manual && empty($manual['auto']);
                 ?>
