@@ -5,7 +5,8 @@ Persönliche Arbeitszeiterfassung mit Web-Dashboard und iPhone Shortcuts Integra
 - **Check-in/out** per iPhone Kurzbefehl (automatisch oder manuell)
 - **Gleitzeit-Konto & Überstunden-Konto** — getrennte Salden, pro Tag wählbar
 - **Automatische Feiertage** für alle 16 Bundesländer
-- **Abwesenheitsverwaltung** für Urlaub, Krank, Gleittage und Feiertage
+- **Abwesenheitsverwaltung** für Urlaub, Bildungsurlaub, Krank, Gleittage, Mehrarbeitsentnahme und Feiertage
+- **Jahreskalender** (`/year.php`) mit Drag-Auswahl zum schnellen Eintragen von Abwesenheiten
 - **Monatsansicht** mit editierbaren und manuell hinzufügbaren Einträgen
 - **Export** als CSV (Excel-kompatibel) und PDF-Druckansicht
 - **Import** aus CSV mit Vorschau
@@ -297,7 +298,7 @@ CREATE TABLE time_entries (
 CREATE TABLE absences (
     id INT PRIMARY KEY AUTO_INCREMENT,
     date DATE NOT NULL,
-    type ENUM('vacation','sick','holiday','gleitzeit','other') NOT NULL,
+    type ENUM('vacation','sick','holiday','gleitzeit','overtime_withdrawal','bildungsurlaub','other') NOT NULL,
     half_day TINYINT(1) DEFAULT 0,
     note VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -320,6 +321,7 @@ gleitzeit/
 ├── setup.php             # DB-Setup (einmalig, danach löschen)
 ├── index.php             # Dashboard (Gleitzeit- & Überstunden-Konto)
 ├── month.php             # Monatsansicht mit Überstunden-Toggle
+├── year.php              # Jahreskalender mit Drag-Auswahl
 ├── absences.php          # Abwesenheiten & Feiertagsübersicht
 ├── export.php            # CSV- und PDF-Export
 ├── import.php            # CSV-Import mit Vorschau

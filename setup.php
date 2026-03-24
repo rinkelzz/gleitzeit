@@ -57,7 +57,7 @@ try {
 }
 
 $migrations = [
-    "ALTER TABLE absences MODIFY type ENUM('vacation','sick','holiday','gleitzeit','overtime_withdrawal','other') NOT NULL",
+    "ALTER TABLE absences MODIFY type ENUM('vacation','sick','holiday','gleitzeit','overtime_withdrawal','bildungsurlaub','other') NOT NULL",
     "ALTER TABLE absences ADD UNIQUE KEY uq_absences_date (date)",
 ];
 

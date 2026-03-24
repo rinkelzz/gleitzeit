@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $type       = $_POST['type'] ?? '';
         $note       = substr(trim($_POST['note'] ?? ''), 0, 255);
         $dates      = $_POST['dates'] ?? [];
-        $validTypes = ['vacation', 'sick', 'gleitzeit', 'overtime_withdrawal'];
+        $validTypes = ['vacation', 'sick', 'gleitzeit', 'overtime_withdrawal', 'bildungsurlaub'];
 
         if (in_array($type, $validTypes, true) && !empty($dates)) {
             $stmt = $db->prepare(
@@ -59,6 +59,7 @@ $typeInfo = [
     'vacation'            => ['label' => 'TU',  'css' => 'tile-vacation'],
     'gleitzeit'           => ['label' => 'EGZ', 'css' => 'tile-gleitzeit'],
     'overtime_withdrawal' => ['label' => 'EMA', 'css' => 'tile-overtime'],
+    'bildungsurlaub'      => ['label' => 'BU',  'css' => 'tile-bildungsurlaub'],
     'sick'                => ['label' => 'AU',  'css' => 'tile-sick'],
     'holiday'             => ['label' => 'FT',  'css' => 'tile-holiday'],
     'other'               => ['label' => '?',   'css' => 'tile-empty'],
@@ -165,6 +166,7 @@ function renderTile(string $date, array $absenceMap, array $holidays, array $typ
         <div class="legend-item"><div class="legend-dot" style="background:#dcfce7;border:1px solid #d1fae5"></div> TU &ndash; Tarifurlaub</div>
         <div class="legend-item"><div class="legend-dot" style="background:#dbeafe;border:1px solid #bfdbfe"></div> EGZ &ndash; Entnahme Gleitzeit</div>
         <div class="legend-item"><div class="legend-dot" style="background:#ede9fe;border:1px solid #ddd6fe"></div> EMA &ndash; Entnahme Mehrarbeit</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#fef9c3;border:1px solid #fef08a"></div> BU &ndash; Bildungsurlaub</div>
         <div class="legend-item"><div class="legend-dot" style="background:#fee2e2;border:1px solid #fecaca"></div> AU &ndash; Krank</div>
         <div class="legend-item"><div class="legend-dot" style="background:#ffedd5;border:1px solid #fed7aa"></div> FT &ndash; Feiertag</div>
         <div class="legend-item"><div class="legend-dot" style="background:#f3f4f6;border:1px solid #e5e7eb"></div> Wochenende</div>
@@ -184,6 +186,7 @@ function renderTile(string $date, array $absenceMap, array $holidays, array $typ
                 <button type="button" data-type="vacation">TU</button>
                 <button type="button" data-type="gleitzeit">EGZ</button>
                 <button type="button" data-type="overtime_withdrawal">EMA</button>
+                <button type="button" data-type="bildungsurlaub">BU</button>
                 <button type="button" data-type="sick">AU</button>
             </div>
             <input type="hidden" name="type" id="selectedType" value="">
